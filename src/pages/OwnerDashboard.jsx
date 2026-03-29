@@ -4,8 +4,8 @@ import { useAuth } from "../context/AuthContext";
 import api from "../api/api";
 
 function OwnerDashboard() {
-  const [announcements,    setAnnouncements]    = useState([]);
-const [selectedShopId,   setSelectedShopId]   = useState("");
+  const [announcements, setAnnouncements] = useState([]);
+  const [selectedShopId, setSelectedShopId] = useState("");
   const { user } = useAuth();
   const navigate = useNavigate();
   const [shops, setShops] = useState([]);
@@ -25,13 +25,14 @@ const [selectedShopId,   setSelectedShopId]   = useState("");
   // forms
   const [shopForm, setShopForm] = useState({
     name: "",
+    description: "", // ✅ new
     address: "",
     latitude: "",
     longitude: "",
     cuisine_type: "",
-    district: "", // ✅
-    state: "", // ✅
-    country: "India", // ✅
+    district: "",
+    state: "",
+    country: "India",
     gst_number: "",
     fssai_number: "",
   });
@@ -83,15 +84,17 @@ const [selectedShopId,   setSelectedShopId]   = useState("");
     setMsg("");
     setError("");
     try {
+      console.log("Sending shop data:", shopForm); // ✅ debug
       await api.post("/shops/create", {
         name: shopForm.name,
+        description: shopForm.description || "", // ✅ new
         address: shopForm.address,
         latitude: parseFloat(shopForm.latitude),
         longitude: parseFloat(shopForm.longitude),
         cuisine_type: shopForm.cuisine_type,
-        district: shopForm.district, // ✅
-        state: shopForm.state, // ✅
-        country: shopForm.country || "India", // ✅
+        district: shopForm.district, // ✅ check this
+        state: shopForm.state, // ✅ check this
+        country: shopForm.country || "India",
         gst_number: shopForm.gst_number,
         fssai_number: shopForm.fssai_number,
       });
@@ -99,6 +102,7 @@ const [selectedShopId,   setSelectedShopId]   = useState("");
       fetchMyShops();
       setShopForm({
         name: "",
+        description: "",
         address: "",
         latitude: "",
         longitude: "",
@@ -155,25 +159,27 @@ const [selectedShopId,   setSelectedShopId]   = useState("");
     }
   };
 
-const handleAnnounce = async (e) => {
+  const handleAnnounce = async (e) => {
     e.preventDefault();
-    setMsg(""); setError("");
+    setMsg("");
+    setError("");
     try {
-        await api.post("/announcements/add", {
-            ...announceForm,
-            shop_id: parseInt(announceForm.shop_id || selectedShopId)
-        });
-        setMsg("Announcement posted!");
-        setAnnounceForm({ shop_id: "", title: "", message: "" });
-        // ✅ refresh list if on announcements tab
-        if (selectedShopId) fetchAnnouncements(selectedShopId);
+      await api.post("/announcements/add", {
+        ...announceForm,
+        shop_id: parseInt(announceForm.shop_id || selectedShopId),
+      });
+      setMsg("Announcement posted!");
+      setAnnounceForm({ shop_id: "", title: "", message: "" });
+      // ✅ refresh list if on announcements tab
+      if (selectedShopId) fetchAnnouncements(selectedShopId);
     } catch (err) {
-        const detail = err.response?.data?.detail;
-        if (typeof detail === "string")   setError(detail);
-        else if (Array.isArray(detail))   setError(detail.map(d => d.msg).join(", "));
-        else                              setError("Failed to post announcement");
+      const detail = err.response?.data?.detail;
+      if (typeof detail === "string") setError(detail);
+      else if (Array.isArray(detail))
+        setError(detail.map((d) => d.msg).join(", "));
+      else setError("Failed to post announcement");
     }
-};
+  };
   const handleDod = async (e) => {
     e.preventDefault();
     setMsg("");
@@ -203,40 +209,42 @@ const handleAnnounce = async (e) => {
     { key: "myshops", label: "🏪 My Shops" },
     { key: "addshop", label: "➕ Add Shop" },
     { key: "adddish", label: "🍛 Add Dish" },
-    { key: "announcements",label: "📋 My Announcements"},
+    { key: "announcements", label: "📋 My Announcements" },
     { key: "dod", label: "⭐ Dish of Day" },
     { key: "feedback", label: "📝 Feedback" },
     { key: "journey", label: "📖 Dish Journey" },
   ];
 
   if (loading) return <p style={{ padding: 24 }}>Loading...</p>;
-const fetchFeedback = async (shopId) => {
+  const fetchFeedback = async (shopId) => {
     try {
-        const res = await api.get(`/feedback/my-shop/${shopId}`);
-        console.log("Feedback response:", res.data); // ✅ debug
-        setFeedbacks(res.data?.feedbacks || []);
+      const res = await api.get(`/feedback/my-shop/${shopId}`);
+      console.log("Feedback response:", res.data); // ✅ debug
+      setFeedbacks(res.data?.feedbacks || []);
     } catch (err) {
-        console.log("Feedback error:", err);
-        setFeedbacks([]);
+      console.log("Feedback error:", err);
+      setFeedbacks([]);
     }
-};
-const handleReply = async (feedbackId) => {
+  };
+  const handleReply = async (feedbackId) => {
     const reply = replyText[feedbackId];
     if (!reply) return setError("Type a reply first!");
-    setMsg(""); setError("");
+    setMsg("");
+    setError("");
     try {
-        await api.post(`/feedback/reply/${parseInt(feedbackId)}`, { reply }); // ✅ parseInt
-        setMsg("Reply sent!");
-        setReplyText({ ...replyText, [feedbackId]: "" });
-        const shopId = document.querySelector("select").value;
-        if (shopId) fetchFeedback(shopId);
+      await api.post(`/feedback/reply/${parseInt(feedbackId)}`, { reply }); // ✅ parseInt
+      setMsg("Reply sent!");
+      setReplyText({ ...replyText, [feedbackId]: "" });
+      const shopId = document.querySelector("select").value;
+      if (shopId) fetchFeedback(shopId);
     } catch (err) {
-        const detail = err.response?.data?.detail;
-        if (typeof detail === "string")   setError(detail);
-        else if (Array.isArray(detail))   setError(detail.map(d => d.msg).join(", "));
-        else                              setError("Failed to send reply");
+      const detail = err.response?.data?.detail;
+      if (typeof detail === "string") setError(detail);
+      else if (Array.isArray(detail))
+        setError(detail.map((d) => d.msg).join(", "));
+      else setError("Failed to send reply");
     }
-};
+  };
   const handleJourney = async (e) => {
     e.preventDefault();
     setMsg("");
@@ -259,24 +267,25 @@ const handleReply = async (feedbackId) => {
   };
   const fetchAnnouncements = async (shopId) => {
     try {
-        const res = await api.get(`/announcements/${shopId}`);
-        setAnnouncements(res.data?.announcements || []);
+      const res = await api.get(`/announcements/${shopId}`);
+      setAnnouncements(res.data?.announcements || []);
     } catch {
-        setAnnouncements([]);
+      setAnnouncements([]);
     }
-};
+  };
 
-const handleDeleteAnnouncement = async (announcementId) => {
+  const handleDeleteAnnouncement = async (announcementId) => {
     if (!window.confirm("Delete this announcement?")) return;
-    setMsg(""); setError("");
+    setMsg("");
+    setError("");
     try {
-        await api.delete(`/announcements/${announcementId}`);
-        setMsg("Announcement deleted!");
-        if (selectedShopId) fetchAnnouncements(selectedShopId);
+      await api.delete(`/announcements/${announcementId}`);
+      setMsg("Announcement deleted!");
+      if (selectedShopId) fetchAnnouncements(selectedShopId);
     } catch (err) {
-        setError(err.response?.data?.detail || "Failed");
+      setError(err.response?.data?.detail || "Failed");
     }
-};
+  };
   return (
     <div className="container">
       <h2 style={{ margin: "24px 0" }}>👨‍🍳 Owner Dashboard</h2>
@@ -454,6 +463,22 @@ const handleDeleteAnnouncement = async (announcementId) => {
                 setShopForm({ ...shopForm, name: e.target.value })
               }
               required
+            />
+            <textarea
+              placeholder="Description (eg: Best Kerala food in town...)"
+              value={shopForm.description}
+              onChange={(e) =>
+                setShopForm({ ...shopForm, description: e.target.value })
+              }
+              rows={2}
+              style={{
+                width: "100%",
+                padding: 10,
+                borderRadius: 8,
+                border: "1px solid #ddd",
+                fontSize: 14,
+                marginBottom: 8,
+              }}
             />
 
             {/* Address — auto filled */}
@@ -644,109 +669,134 @@ const handleDeleteAnnouncement = async (announcementId) => {
           </form>
         </div>
       )}
-{tab === "announcements" && (
-    <div>
-        <h3 style={{ marginBottom: 16 }}>📋 My Announcements</h3>
+      {tab === "announcements" && (
+        <div>
+          <h3 style={{ marginBottom: 16 }}>📋 My Announcements</h3>
 
-        {/* Select shop */}
-        <select
+          {/* Select shop */}
+          <select
             value={selectedShopId}
             onChange={(e) => {
-                setSelectedShopId(e.target.value);
-                fetchAnnouncements(e.target.value);
+              setSelectedShopId(e.target.value);
+              fetchAnnouncements(e.target.value);
             }}
             style={{ marginBottom: 16 }}
-        >
+          >
             <option value="">Select Shop</option>
-            {shops.filter(s => s.is_verified).map((s) => (
-                <option key={s.id} value={s.id}>{s.name}</option>
-            ))}
-        </select>
+            {shops
+              .filter((s) => s.is_verified)
+              .map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
+              ))}
+          </select>
 
-        {announcements.length === 0 && selectedShopId && (
+          {announcements.length === 0 && selectedShopId && (
             <p style={{ color: "#888" }}>No announcements yet!</p>
-        )}
+          )}
 
-        {announcements.map((a, i) => (
-            <div key={i} className="card" style={{
-                marginBottom  : 12,
-                borderLeft    : "4px solid #ff6b35"
-            }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                    <div style={{ flex: 1 }}>
-                        <p style={{ fontWeight: "bold", color: "#e65100" }}>
-                            📢 {a.title}
-                        </p>
-                        <p style={{ fontSize: 13, color: "#555", marginTop: 6 }}>
-                            {a.message}
-                        </p>
-                        <p style={{ fontSize: 11, color: "#aaa", marginTop: 6 }}>
-                            {new Date(a.posted_at).toLocaleDateString()}
-                        </p>
-                    </div>
-                    <button
-                        onClick={() => handleDeleteAnnouncement(a.id)}
-                        style={{
-                            background: "#ffebee",
-                            color     : "#c62828",
-                            fontSize  : 12,
-                            padding   : "6px 12px",
-                            marginLeft: 12
-                        }}
-                    >
-                        🗑️ Delete
-                    </button>
+          {announcements.map((a, i) => (
+            <div
+              key={i}
+              className="card"
+              style={{
+                marginBottom: 12,
+                borderLeft: "4px solid #ff6b35",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "flex-start",
+                }}
+              >
+                <div style={{ flex: 1 }}>
+                  <p style={{ fontWeight: "bold", color: "#e65100" }}>
+                    📢 {a.title}
+                  </p>
+                  <p style={{ fontSize: 13, color: "#555", marginTop: 6 }}>
+                    {a.message}
+                  </p>
+                  <p style={{ fontSize: 11, color: "#aaa", marginTop: 6 }}>
+                    {new Date(a.posted_at).toLocaleDateString()}
+                  </p>
                 </div>
+                <button
+                  onClick={() => handleDeleteAnnouncement(a.id)}
+                  style={{
+                    background: "#ffebee",
+                    color: "#c62828",
+                    fontSize: 12,
+                    padding: "6px 12px",
+                    marginLeft: 12,
+                  }}
+                >
+                  🗑️ Delete
+                </button>
+              </div>
             </div>
-        ))}
+          ))}
 
-        {/* Quick post new announcement */}
-        {selectedShopId && (
-            <div className="card" style={{ marginTop: 16, background: "#fff3e0" }}>
-                <h4 style={{ marginBottom: 12 }}>➕ Post New Announcement</h4>
-                <form onSubmit={handleAnnounce}>
-                    <input
-                        type="hidden"
-                        value={selectedShopId}
-                        onChange={() => setAnnounceForm({
-                            ...announceForm,
-                            shop_id: selectedShopId
-                        })}
-                    />
-                    <input
-                        placeholder="Title *"
-                        value={announceForm.title}
-                        onChange={(e) => setAnnounceForm({
-                            ...announceForm,
-                            title  : e.target.value,
-                            shop_id: selectedShopId     // ✅ auto set shop
-                        })}
-                        required
-                    />
-                    <textarea
-                        placeholder="Message *"
-                        rows={3}
-                        value={announceForm.message}
-                        onChange={(e) => setAnnounceForm({
-                            ...announceForm,
-                            message: e.target.value,
-                            shop_id: selectedShopId     // ✅ auto set shop
-                        })}
-                        required
-                        style={{
-                            width       : "100%", padding: 10,
-                            borderRadius: 8, border: "1px solid #ddd",
-                            fontSize    : 14
-                        }}
-                    />
-                    <button type="submit" style={{ width: "100%", marginTop: 8 }}>
-                        📢 Post Announcement
-                    </button>
-                </form>
+          {/* Quick post new announcement */}
+          {selectedShopId && (
+            <div
+              className="card"
+              style={{ marginTop: 16, background: "#fff3e0" }}
+            >
+              <h4 style={{ marginBottom: 12 }}>➕ Post New Announcement</h4>
+              <form onSubmit={handleAnnounce}>
+                <input
+                  type="hidden"
+                  value={selectedShopId}
+                  onChange={() =>
+                    setAnnounceForm({
+                      ...announceForm,
+                      shop_id: selectedShopId,
+                    })
+                  }
+                />
+                <input
+                  placeholder="Title *"
+                  value={announceForm.title}
+                  onChange={(e) =>
+                    setAnnounceForm({
+                      ...announceForm,
+                      title: e.target.value,
+                      shop_id: selectedShopId, // ✅ auto set shop
+                    })
+                  }
+                  required
+                />
+                <textarea
+                  placeholder="Message *"
+                  rows={3}
+                  value={announceForm.message}
+                  onChange={(e) =>
+                    setAnnounceForm({
+                      ...announceForm,
+                      message: e.target.value,
+                      shop_id: selectedShopId, // ✅ auto set shop
+                    })
+                  }
+                  required
+                  style={{
+                    width: "100%",
+                    padding: 10,
+                    borderRadius: 8,
+                    border: "1px solid #ddd",
+                    fontSize: 14,
+                  }}
+                />
+                <button type="submit" style={{ width: "100%", marginTop: 8 }}>
+                  📢 Post Announcement
+                </button>
+              </form>
             </div>
-        )}
-    </div>
-)}
+          )}
+        </div>
+      )}
       {/* Dish of Day */}
       {tab === "dod" && (
         <div className="card">
@@ -814,129 +864,207 @@ const handleDeleteAnnouncement = async (announcementId) => {
       )}
 
       {tab === "feedback" && (
-    <div>
-        <h3 style={{ marginBottom: 16 }}>📝 Customer Feedback</h3>
+        <div>
+          <h3 style={{ marginBottom: 16 }}>📝 Customer Feedback</h3>
 
-        {/* Select shop */}
-        <select
+          {/* Select shop */}
+          <select
             onChange={(e) => fetchFeedback(e.target.value)}
             style={{ marginBottom: 16 }}
-        >
+          >
             <option value="">Select Shop</option>
-            {shops.filter(s => s.is_verified).map((s) => (
-                <option key={s.id} value={s.id}>{s.name}</option>
-            ))}
-        </select>
+            {shops
+              .filter((s) => s.is_verified)
+              .map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
+              ))}
+          </select>
 
-        {feedbacks.length === 0 && (
-            <p style={{ color: "#888" }}>No feedback yet! Select a shop above.</p>
-        )}
+          {feedbacks.length === 0 && (
+            <p style={{ color: "#888" }}>
+              No feedback yet! Select a shop above.
+            </p>
+          )}
 
-        {/* ✅ Averages summary */}
-        {feedbacks.length > 0 && (
-            <div className="card" style={{ marginBottom: 16, background: "#fff3e0" }}>
-                <h4 style={{ marginBottom: 12 }}>📊 Overall Averages</h4>
-                <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-                    {[
-                        { label: "🍛 Taste",        value: (feedbacks.reduce((s, f) => s + f.taste, 0) / feedbacks.length).toFixed(1) },
-                        { label: "🍽️ Portion",      value: (feedbacks.reduce((s, f) => s + f.portion, 0) / feedbacks.length).toFixed(1) },
-                        { label: "💰 Value",         value: (feedbacks.reduce((s, f) => s + f.value, 0) / feedbacks.length).toFixed(1) },
-                        { label: "🎨 Presentation",  value: (feedbacks.reduce((s, f) => s + f.presentation, 0) / feedbacks.length).toFixed(1) },
-                    ].map((r, i) => (
-                        <div key={i} style={{
-                            background: "white", borderRadius: 8,
-                            padding: "8px 16px", textAlign: "center"
-                        }}>
-                            <p style={{ fontSize: 11, color: "#888" }}>{r.label}</p>
-                            <p style={{ fontWeight: "bold", fontSize: 20, color: "#ff6b35" }}>
-                                {r.value}
-                            </p>
-                        </div>
-                    ))}
-                </div>
+          {/* ✅ Averages summary */}
+          {feedbacks.length > 0 && (
+            <div
+              className="card"
+              style={{ marginBottom: 16, background: "#fff3e0" }}
+            >
+              <h4 style={{ marginBottom: 12 }}>📊 Overall Averages</h4>
+              <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+                {[
+                  {
+                    label: "🍛 Taste",
+                    value: (
+                      feedbacks.reduce((s, f) => s + f.taste, 0) /
+                      feedbacks.length
+                    ).toFixed(1),
+                  },
+                  {
+                    label: "🍽️ Portion",
+                    value: (
+                      feedbacks.reduce((s, f) => s + f.portion, 0) /
+                      feedbacks.length
+                    ).toFixed(1),
+                  },
+                  {
+                    label: "💰 Value",
+                    value: (
+                      feedbacks.reduce((s, f) => s + f.value, 0) /
+                      feedbacks.length
+                    ).toFixed(1),
+                  },
+                  {
+                    label: "🎨 Presentation",
+                    value: (
+                      feedbacks.reduce((s, f) => s + f.presentation, 0) /
+                      feedbacks.length
+                    ).toFixed(1),
+                  },
+                ].map((r, i) => (
+                  <div
+                    key={i}
+                    style={{
+                      background: "white",
+                      borderRadius: 8,
+                      padding: "8px 16px",
+                      textAlign: "center",
+                    }}
+                  >
+                    <p style={{ fontSize: 11, color: "#888" }}>{r.label}</p>
+                    <p
+                      style={{
+                        fontWeight: "bold",
+                        fontSize: 20,
+                        color: "#ff6b35",
+                      }}
+                    >
+                      {r.value}
+                    </p>
+                  </div>
+                ))}
+              </div>
             </div>
-        )}
+          )}
 
-        {/* Individual feedbacks */}
-        {feedbacks.map((f, i) => (
+          {/* Individual feedbacks */}
+          {feedbacks.map((f, i) => (
             <div key={i} className="card" style={{ marginBottom: 12 }}>
+              {/* Customer name */}
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  marginBottom: 10,
+                }}
+              >
+                <p style={{ fontWeight: "bold" }}>👤 {f.from}</p>
+                <p style={{ fontSize: 12, color: "#aaa" }}>
+                  {new Date(f.date).toLocaleDateString()}
+                </p>
+              </div>
 
-                {/* Customer name */}
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 10 }}>
-                    <p style={{ fontWeight: "bold" }}>👤 {f.from}</p>
-                    <p style={{ fontSize: 12, color: "#aaa" }}>
-                        {new Date(f.date).toLocaleDateString()}
+              {/* Ratings */}
+              <div
+                style={{
+                  display: "flex",
+                  gap: 8,
+                  flexWrap: "wrap",
+                  marginBottom: 10,
+                }}
+              >
+                {[
+                  { label: "🍛 Taste", value: f.taste },
+                  { label: "🍽️ Portion", value: f.portion },
+                  { label: "💰 Value", value: f.value },
+                  { label: "🎨 Presentation", value: f.presentation },
+                ].map((r, j) => (
+                  <div
+                    key={j}
+                    style={{
+                      background: "#f9f9f9",
+                      borderRadius: 8,
+                      padding: "6px 12px",
+                      textAlign: "center",
+                    }}
+                  >
+                    <p style={{ fontSize: 11, color: "#888" }}>{r.label}</p>
+                    <p style={{ fontWeight: "bold", color: "#ff6b35" }}>
+                      ⭐ {r.value}
                     </p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Comment */}
+              {f.comment && (
+                <p
+                  style={{
+                    fontSize: 13,
+                    color: "#555",
+                    background: "#f9f9f9",
+                    padding: "8px 12px",
+                    borderRadius: 8,
+                    marginBottom: 10,
+                  }}
+                >
+                  💬 "{f.comment}"
+                </p>
+              )}
+
+              {/* Owner reply already sent */}
+              {f.owner_reply && f.owner_reply !== "No reply yet" && (
+                <div
+                  style={{
+                    background: "#e8f5e9",
+                    borderRadius: 8,
+                    padding: "8px 12px",
+                    marginBottom: 10,
+                  }}
+                >
+                  <p
+                    style={{
+                      fontWeight: "bold",
+                      color: "#2e7d32",
+                      fontSize: 12,
+                    }}
+                  >
+                    ✅ Your reply:
+                  </p>
+                  <p style={{ fontSize: 13, color: "#555" }}>{f.owner_reply}</p>
                 </div>
+              )}
 
-                {/* Ratings */}
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
-                    {[
-                        { label: "🍛 Taste",       value: f.taste        },
-                        { label: "🍽️ Portion",     value: f.portion      },
-                        { label: "💰 Value",        value: f.value        },
-                        { label: "🎨 Presentation", value: f.presentation },
-                    ].map((r, j) => (
-                        <div key={j} style={{
-                            background: "#f9f9f9", borderRadius: 8,
-                            padding: "6px 12px", textAlign: "center"
-                        }}>
-                            <p style={{ fontSize: 11, color: "#888" }}>{r.label}</p>
-                            <p style={{ fontWeight: "bold", color: "#ff6b35" }}>
-                                ⭐ {r.value}
-                            </p>
-                        </div>
-                    ))}
+              {/* Reply input — only if not replied yet */}
+              {(!f.owner_reply || f.owner_reply === "No reply yet") && (
+                <div style={{ display: "flex", gap: 8 }}>
+                  <input
+                    placeholder="Write a reply to this customer..."
+                    value={replyText[f.feedback_id] || ""}
+                    onChange={(e) =>
+                      setReplyText({
+                        ...replyText,
+                        [f.feedback_id]: e.target.value,
+                      })
+                    }
+                    style={{ margin: 0 }}
+                  />
+                  <button
+                    onClick={() => handleReply(f.feedback_id)}
+                    style={{ background: "#e8f5e9", color: "#2e7d32" }}
+                  >
+                    Send
+                  </button>
                 </div>
-
-                {/* Comment */}
-                {f.comment && (
-                    <p style={{
-                        fontSize: 13, color: "#555",
-                        background: "#f9f9f9", padding: "8px 12px",
-                        borderRadius: 8, marginBottom: 10
-                    }}>
-                        💬 "{f.comment}"
-                    </p>
-                )}
-
-                {/* Owner reply already sent */}
-                {f.owner_reply && f.owner_reply !== "No reply yet" && (
-                    <div style={{
-                        background: "#e8f5e9", borderRadius: 8,
-                        padding: "8px 12px", marginBottom: 10
-                    }}>
-                        <p style={{ fontWeight: "bold", color: "#2e7d32", fontSize: 12 }}>
-                            ✅ Your reply:
-                        </p>
-                        <p style={{ fontSize: 13, color: "#555" }}>{f.owner_reply}</p>
-                    </div>
-                )}
-
-                {/* Reply input — only if not replied yet */}
-                {(!f.owner_reply || f.owner_reply === "No reply yet") && (
-                    <div style={{ display: "flex", gap: 8 }}>
-                        <input
-                            placeholder="Write a reply to this customer..."
-                            value={replyText[f.feedback_id] || ""}
-                            onChange={(e) => setReplyText({
-                                ...replyText,
-                                [f.feedback_id]: e.target.value
-                            })}
-                            style={{ margin: 0 }}
-                        />
-                        <button
-                            onClick={() => handleReply(f.feedback_id)}
-                            style={{ background: "#e8f5e9", color: "#2e7d32" }}
-                        >
-                            Send
-                        </button>
-                    </div>
-                )}
+              )}
             </div>
-        ))}
-    </div>
-)}
+          ))}
+        </div>
+      )}
       {tab === "journey" && (
         <div className="card">
           <h3 style={{ marginBottom: 16 }}>📖 Log Dish Journey</h3>
