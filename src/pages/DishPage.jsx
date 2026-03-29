@@ -61,45 +61,37 @@ function DishPage() {
         setLoading(false);
     };
 
-    const connectWs = () => {
-        // ✅ close existing connection before creating new one
-        if (wsRef.current) {
-            wsRef.current.close();
-            wsRef.current = null;
-        }
+   const connectWs = () => {
+    if (wsRef.current) {
+        wsRef.current.close();
+        wsRef.current = null;
+    }
 
-        const token  = localStorage.getItem("token");
-        if (!token) return;
+    const token  = localStorage.getItem("token");
+    if (!token) return;
 
-        const socket = new WebSocket(`ws://localhost:8000/chat/ws/${id}/${token}`);
+    // ✅ use wss:// for production, ws:// for local
+    const wsUrl = process.env.REACT_APP_API_URL?.startsWith("https")
+        ? `wss://foodmark-backend.onrender.com/chat/ws/${id}/${token}`
+        : `ws://localhost:8000/chat/ws/${id}/${token}`;
 
-        socket.onopen = () => {
-            setWsStatus("Connected ✅");
-        };
-
-        socket.onmessage = (e) => {
-            const raw     = e.data;
-            const colonIdx= raw.indexOf(":");
-            const userName = colonIdx > -1 ? raw.substring(0, colonIdx).trim() : "";
-            const message  = colonIdx > -1 ? raw.substring(colonIdx + 1).trim() : raw;
-
-            setMessages((prev) => {
-                // ✅ prevent duplicate messages
-                const last = prev[prev.length - 1];
-                if (last && last.message === message && last.user === userName) return prev;
-                return [
-                    ...prev,
-                    { user: userName, message, created_at: new Date() }
-                ];
-            });
-        };
-
-        socket.onclose = () => setWsStatus("Disconnected ❌");
-        socket.onerror = () => setWsStatus("Error ⚠️");
-
-        wsRef.current = socket;
+    const socket = new WebSocket(wsUrl);
+    socket.onopen    = () => setWsStatus("Connected ✅");
+    socket.onmessage = (e) => {
+        const raw      = e.data;
+        const colonIdx = raw.indexOf(":");
+        const userName = colonIdx > -1 ? raw.substring(0, colonIdx).trim() : "";
+        const message  = colonIdx > -1 ? raw.substring(colonIdx + 1).trim() : raw;
+        setMessages((prev) => {
+            const last = prev[prev.length - 1];
+            if (last && last.message === message && last.user === userName) return prev;
+            return [...prev, { user: userName, message, created_at: new Date() }];
+        });
     };
-
+    socket.onclose = () => setWsStatus("Disconnected ❌");
+    socket.onerror = () => setWsStatus("Error ⚠️");
+    wsRef.current  = socket;
+};
     const handleVote = async (type) => {
         if (!user) return alert("Login to vote!");
         try {
