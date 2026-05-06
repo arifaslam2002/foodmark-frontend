@@ -51,30 +51,6 @@ function AdminDashboard() {
     }
   };
 
-  const handleResolve = async (reportId) => {
-    setMsg("");
-    setError("");
-    try {
-      await resolveReport(reportId);
-      setMsg("Report resolved!");
-      fetchAll();
-    } catch (err) {
-      setError(err.response?.data?.detail || "Failed");
-    }
-  };
-
-  const handleDeleteReview = async (reviewId) => {
-    setMsg("");
-    setError("");
-    try {
-      await api.delete(`/reports/delete-review/${reviewId}`);
-      setMsg("Review deleted!");
-      fetchAll();
-    } catch (err) {
-      setError(err.response?.data?.detail || "Failed");
-    }
-  };
-
   const tabs = [
     { key: "overview", label: "📊 Overview" },
     { key: "verify", label: "✅ Verify Shops" },
